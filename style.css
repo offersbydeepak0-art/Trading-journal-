@@ -192,12 +192,12 @@ min-width:20px;
 
 th{
 background:#333;
-padding:12px;
+padding:6px;
 }
 
 td{
-background:#2a2a2a;
-padding:12px;
+background:#2a242a;
+padding:6px;
 text-align:center;
 border-top:1px solid #444;
 }
@@ -213,12 +213,20 @@ font-weight:bold;
 }
 
 .edit-btn{
+  
 background:#2196f3;
 margin-right:5px;
+margin-top: 15px;
+height: 39px;
+width: 70px;
 }
 
 .delete-btn{
+  margin-right:5px;
 background:#f44336;
+margin-top: 10px;
+height: 39px;
+width: 70px;
 }
 
 #downloadPDF{
@@ -253,6 +261,7 @@ font-size:18px;
 
 table{
 font-size:13px;
+
 }
 
 }
