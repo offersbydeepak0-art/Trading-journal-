@@ -120,6 +120,8 @@ function renderTrades() {
     });
 
     totalPL.textContent = total.toFixed(2);
+    const currentBalance = startingBalance + total;
+balance.textContent = currentBalance.toFixed(2);
     totalTrades.textContent = trades.length;
     wins.textContent = win;
     losses.textContent = loss;
@@ -364,3 +366,6 @@ window.addEventListener("load", () => {
     console.log("Trading Journal Loaded Successfully");
 
 });
+
+const startingBalance = 0; // Change this to your starting balance
+const balance = document.getElementById("balance");
