@@ -69,13 +69,13 @@ function addTrade() {
 function renderTrades() {
 
     tradeBody.innerHTML = "";
-
+let tota = 10
     let total = 0;
     let win = 0;
     let loss = 0;
 
     trades.forEach((trade, index) => {
-
+tota += Number(trade.pl);
         total += Number(trade.pl);
 
         if (trade.result === "Win") {
@@ -118,7 +118,8 @@ function renderTrades() {
         </tr>
         `;
     });
-
+totalL.textContent = tota
+.toFixed(2);
     totalPL.textContent = total.toFixed(2);
     totalTrades.textContent = trades.length;
     wins.textContent = win;
@@ -231,7 +232,7 @@ if (dayTrades.length > 0) {
     cell.innerHTML = `
 <div class="day-number">${day}</div>
 <div class="day-pl">
-${totalPL > 0 ? "+" : ""}${totalPL.toFixed(0)}
+${totalPL > 0 ? "+" : ""}${totalPL.toFixed(2)}
 </div>
 `;
     
