@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login & Registration</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#111;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:350px;
+    background:#222;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,255,0,.3);
+}
+
+h2{
+    text-align:center;
+    color:#00ff88;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:8px 0;
+    border:none;
+    border-radius:5px;
+    outline:none;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:5px;
+    background:#00ff88;
+    color:#111;
+    font-size:16px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#00cc66;
+}
+
+p{
+    color:#fff;
+    text-align:center;
+    margin-top:15px;
+}
+
+a{
+    color:#00ff88;
+    cursor:pointer;
+    text-decoration:none;
+}
+
+#signupForm{
+    display:none;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="loginForm">
+<h2>Login</h2>
+
+<input type="email" id="loginEmail" placeholder="Email">
+
+<input type="password" id="loginPassword" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+<p>
+Don't have an account?
+<a onclick="showSignup()">Register</a>
+</p>
+</div>
+
+<div id="signupForm">
+<h2>Register</h2>
+
+<input type="text" id="name" placeholder="Full Name">
+
+<input type="email" id="signupEmail" placeholder="Email">
+
+<input type="password" id="signupPassword" placeholder="Password">
+
+<button onclick="signup()">Register</button>
+
+<p>
+Already have an account?
+<a onclick="showLogin()">Login</a>
+</p>
+
+</div>
+
+</div>
+
+<script>
+function showSignup(){
+    document.getElementById("loginForm").style.display="none";
+    document.getElementById("signupForm").style.display="block";
+}
+
+function showLogin(){
+    document.getElementById("signupForm").style.display="none";
+    document.getElementById("loginForm").style.display="block";
+}
+
+function signup(){
+    alert("Signup button clicked");
+}
+
+function login(){
+    alert("Login button clicked");
+}
+</script>
+
+
+
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDn1VGmr0SqVxJWaUHj1krKvZTmyS5uYC4",
+  authDomain: "trading-journal-45af7.firebaseapp.com",
+  projectId: "trading-journal-45af7",
+  storageBucket: "trading-journal-45af7.firebasestorage.app",
+  messagingSenderId: "178008096103",
+  appId: "1:178008096103:web:2748b1d345e8505be943c2",
+  measurementId: "G-MFM3N4C7X2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+// Signup
+window.signup = function () {
+    const email = document.getElementById("signupEmail").value;
+    const password = document.getElementById("signupPassword").value;
+
+    createUserWithEmailAndPassword(auth, email, password)
+        .then(() => {
+            alert("Registration Successful");
+            window.location.href = "journal.html";
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+};
+
+// Login
+window.login = function () {
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then(() => {
+            alert("Login Successful");
+            window.location.href = "journal.html";
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+};
+
+</script>
+
+</body>
+</html>
