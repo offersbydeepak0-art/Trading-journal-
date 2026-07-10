@@ -1,72 +1,192 @@
-// ===========================
-// Trading Journal - Part 1
-// ===========================
+// ==========================
+// Part 1 - Firebase + Auth
+// ==========================
 
-// Load trades from Local Storage
-let trades = JSON.parse(localStorage.getItem("trades")) || [];
+import { auth, db } from "./firebase.js";
 
-// Current month
+import {
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+import {
+    collection,
+    addDoc,
+    getDocs,
+    deleteDoc,
+    updateDoc,
+    doc,
+    query,
+    where
+} from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+// ==========================
+// Global Variables
+// ==========================
+
+let trades = [];
 let currentDate = new Date();
+let editingId = null;
+const startingBalance = 0;
 
+// ==========================
 // Dashboard Elements
+// ==========================
+
 const totalPL = document.getElementById("totalPL");
 const totalTrades = document.getElementById("totalTrades");
 const wins = document.getElementById("wins");
 const losses = document.getElementById("losses");
 const winRate = document.getElementById("winRate");
+const balance = document.getElementById("balance");
 
-// Table
 const tradeBody = document.getElementById("tradeBody");
-
-// Calendar
 const calendar = document.getElementById("calendar");
 const monthYear = document.getElementById("monthYear");
 
-// Initialize App
-window.onload = function() {
-  renderTrades();
-  renderCalendar();
+// ==========================
+// Authentication
+// ==========================
+
+onAuthStateChanged(auth, async (user) => {
+    
+    if (!user) {
+        window.location.href = "index.html";
+        return;
+    }
+    
+    document.getElementById("userEmail").textContent = user.email;
+    
+    await loadTrades();
+    renderTrades();
+    renderCalendar();
+    
+});
+
+// ==========================
+// Logout
+// ==========================
+
+const logoutBtn = document.getElementById("logoutBtn");
+
+if (logoutBtn) {
+    
+    logoutBtn.addEventListener("click", async () => {
+        
+        await signOut(auth);
+        
+        window.location.href = "index.html";
+        
+    });
+    
+}
+
+// ==========================
+// Load Trades
+// ==========================
+
+async function loadTrades() {
+    
+    trades = [];
+    
+    const q = query(
+        collection(db, "trades"),
+        where("email", "==", auth.currentUser.email)
+    );
+    
+    const snapshot = await getDocs(q);
+    
+    snapshot.forEach((docSnap) => {
+        
+        trades.push({
+            id: docSnap.id,
+            ...docSnap.data()
+        });
+        
+    });
+    
+}
+
+
+// ==========================
+// Part 2 - Add / Update Trade
+// ==========================
+
+window.addTrade = async function () {
+
+    const trade = {
+        pair: document.getElementById("pair").value.trim(),
+        date: document.getElementById("date").value,
+        count: Number(document.getElementById("trades").value),
+        side: document.getElementById("side").value,
+        result: document.getElementById("result").value,
+        pl: Number(document.getElementById("pl").value),
+        reason: document.getElementById("reason").value.trim(),
+        email: auth.currentUser.email,
+        createdAt: Date.now()
+    };
+
+    if (!trade.pair || !trade.date) {
+        alert("Please fill all required fields.");
+        return;
+    }
+
+    try {
+
+        if (editingId && trades.find(t => t.id === editingId)) {
+    await updateDoc(doc(db, "trades", editingId), trade);
+    editingId = null;
+} else {
+    await addDoc(collection(db, "trades"), trade);
+    editingId = null;
+}
+
+        document.querySelector(".form-box").reset();
+
+        await loadTrades();
+
+        renderTrades();
+
+        renderCalendar();
+
+    } catch (err) {
+
+        alert(err.message);
+
+    }
+
 };
 
-// Save Local Storage
-function saveTrades() {
-  localStorage.setItem("trades", JSON.stringify(trades));
-}
+// ==========================
+// Edit Trade
+// ==========================
 
-// Add Trade
-function addTrade() {
-  
-  const trade = {
-    id: Date.now(),
-    pair: document.getElementById("pair").value,
-    date: document.getElementById("date").value,
-    count: document.getElementById("trades").value,
-    side: document.getElementById("side").value,
-    result: document.getElementById("result").value,
-    pl: parseFloat(document.getElementById("pl").value) || 0,
-    reason: document.getElementById("reason").value
-  };
-  
-  if (!trade.pair || !trade.date) {
-    alert("Please fill Pair and Date.");
-    return;
-  }
-  
-  trades.push(trade);
-  
-  saveTrades();
-  
-  renderTrades();
-  
-  renderCalendar();
-  
-  document.querySelector(".form-box").reset();
-}
-// ===========================
-// Render Trades & Dashboard
-// ===========================
+window.editTrade = function (index) {
 
-function renderTrades() {
+    const trade = trades[index];
+
+    editingId = trade.id;
+
+    document.getElementById("pair").value = trade.pair;
+    document.getElementById("date").value = trade.date;
+    document.getElementById("trades").value = trade.count;
+    document.getElementById("side").value = trade.side;
+    document.getElementById("result").value = trade.result;
+    document.getElementById("pl").value = trade.pl;
+    document.getElementById("reason").value = trade.reason;
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+};
+
+
+// ==========================
+// Part 3 - Render Dashboard
+// ==========================
+
+window.renderTrades = function () {
 
     tradeBody.innerHTML = "";
 
@@ -86,110 +206,78 @@ function renderTrades() {
 
         tradeBody.innerHTML += `
         <tr>
-
             <td>${trade.date}</td>
-
             <td>${trade.pair}</td>
-
             <td>${trade.side}</td>
-
             <td class="${trade.result === "Win" ? "win" : "loss"}">
                 ${trade.result}
             </td>
-
-            <td>${trade.pl.toFixed(2)}</td>
-
+            <td>${Number(trade.pl).toFixed(2)}</td>
             <td>${trade.count}</td>
-
-            <td>${trade.reason}</td>
-
+            <td>${trade.reason || ""}</td>
             <td>
-                <button class="edit-btn"
-                    onclick="editTrade(${index})">
-                    Edit
-                </button>
+              <button class="edit-btn" onclick="editTrade(${index})">
+    ✏️ Edit
+</button>
 
-                <button class="delete-btn"
-                    onclick="deleteTrade(${index})">
-                    Delete
-                </button>
+<button class="delete-btn" onclick="deleteTrade('${trade.id}')">
+    🗑 Delete
+</button>
             </td>
-
         </tr>
         `;
+
     });
 
     totalPL.textContent = total.toFixed(2);
-    const currentBalance = startingBalance + total;
-balance.textContent = currentBalance.toFixed(2);
+
+    balance.textContent = (startingBalance + total).toFixed(2);
+
     totalTrades.textContent = trades.length;
+
     wins.textContent = win;
+
     losses.textContent = loss;
 
-    if (trades.length > 0) {
-        winRate.textContent =
-            ((win / trades.length) * 100).toFixed(1) + "%";
-    } else {
-        winRate.textContent = "0%";
-    }
-}
+    winRate.textContent =
+        trades.length === 0
+            ? "0%"
+            : ((win / trades.length) * 100).toFixed(1) + "%";
 
+};
 
-// ===========================
+// ==========================
 // Delete Trade
-// ===========================
+// ==========================
 
-function deleteTrade(index) {
+window.deleteTrade = async function (id) {
 
     if (!confirm("Delete this trade?")) return;
 
-    trades.splice(index, 1);
+    try {
 
-    saveTrades();
+        await deleteDoc(doc(db, "trades", id));
 
-    renderTrades();
+        await loadTrades();
 
-    renderCalendar();
+        renderTrades();
 
-}
+        renderCalendar();
 
-// ===========================
-// Edit Trade
-// ===========================
+    } catch (err) {
 
-function editTrade(index) {
+        alert(err.message);
 
-    const trade = trades[index];
+    }
 
-    document.getElementById("pair").value = trade.pair;
-    document.getElementById("date").value = trade.date;
-    document.getElementById("trades").value = trade.count;
-    document.getElementById("side").value = trade.side;
-    document.getElementById("result").value = trade.result;
-    document.getElementById("pl").value = trade.pl;
-    document.getElementById("reason").value = trade.reason;
-
-    trades.splice(index, 1);
-
-    saveTrades();
-
-    renderTrades();
-
-    renderCalendar();
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-
-}
+};
 
 
-// ===========================
-// Calendar
-// ===========================
+// ==========================
+// Part 4 - Calendar
+// ==========================
 
-function renderCalendar() {
+window.renderCalendar = function () {
 
     calendar.innerHTML = "";
 
@@ -215,71 +303,64 @@ function renderCalendar() {
     for (let day = 1; day <= daysInMonth; day++) {
 
         const cell = document.createElement("div");
-
         cell.className = "day";
-
-        cell.textContent = day;
 
         const dateString =
             `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-        // Highlight dates that have trades
         const dayTrades = trades.filter(t => t.date === dateString);
 
-if (dayTrades.length > 0) {
-    
-    const totalPL = dayTrades.reduce((sum, t) => sum + Number(t.pl), 0);
-    
-    cell.innerHTML = `
-<div class="day-number">${day}</div>
-<div class="day-pl">
-${totalPL > 0 ? "+" : ""}${totalPL.toFixed(2)}
-</div>
-`;
-    
-    if (totalPL >= 0) {
-        cell.style.background = "#359638"; // Green
-    } else {
-        cell.style.background = "#c43939"; // Red
-    }
-    
-    cell.style.color = "#fff";
-}
+        let totalDayPL = 0;
 
-        // Highlight today
-        const today = new Date();
+        dayTrades.forEach(t => {
+            totalDayPL += Number(t.pl);
+        });
 
-        if (
-            today.getFullYear() === year &&
-            today.getMonth() === month &&
-            today.getDate() === day
-        ) {
-            cell.classList.add("today");
+        cell.innerHTML = `
+            <div class="day-number">${day}</div>
+            ${
+                dayTrades.length
+                    ? `<div class="day-pl">${totalDayPL > 0 ? "+" : ""}${totalDayPL.toFixed(2)}</div>`
+                    : ""
+            }
+        `;
+
+        if (dayTrades.length) {
+            cell.style.background =
+                totalDayPL >= 0 ? "#2e7d32" : "#c62828";
+            cell.style.color = "#fff";
         }
 
-        // Click a day to show its trades
-        cell.onclick = function () {
+        cell.onclick = () => {
 
             const rows = tradeBody.querySelectorAll("tr");
 
             rows.forEach(row => {
+
                 if (row.cells[0].textContent === dateString) {
+
                     row.scrollIntoView({
                         behavior: "smooth",
                         block: "center"
                     });
+
                     row.style.outline = "2px solid #00e676";
+
                     setTimeout(() => {
                         row.style.outline = "";
-                    }, 2000);
+                    }, 1500);
+
                 }
+
             });
 
         };
 
         calendar.appendChild(cell);
+
     }
-}
+
+};
 
 // Previous Month
 document.getElementById("prevMonth").addEventListener("click", () => {
@@ -293,79 +374,62 @@ document.getElementById("nextMonth").addEventListener("click", () => {
     renderCalendar();
 });
 
+// ==========================
+// Part 5 - PDF + Search
+// ==========================
 
-// ===========================
-// PDF Export
-// ===========================
-
-function downloadPDF() {
+// Download PDF
+window.downloadPDF = function () {
 
     const element = document.querySelector(".container");
 
-    const options = {
-        margin: 0.5,
-        filename: "Trading_Journal.pdf",
-        image: {
-            type: "jpeg",
-            quality: 1
-        },
-        html2canvas: {
-            scale: 2
-        },
-        jsPDF: {
-            unit: "in",
-            format: "a4",
-            orientation: "portrait"
-        }
-    };
+    html2pdf()
+        .set({
+            margin: 0.5,
+            filename: "Trading_Journal.pdf",
+            image: { type: "jpeg", quality: 1 },
+            html2canvas: { scale: 2 },
+            jsPDF: {
+                unit: "in",
+                format: "a4",
+                orientation: "portrait"
+            }
+        })
+        .from(element)
+        .save();
 
-    html2pdf().set(options).from(element).save();
-}
+};
 
-// ===========================
 // Search Trades
-// ===========================
-
-function searchTrades(keyword) {
+window.searchTrades = function (keyword) {
 
     keyword = keyword.toLowerCase();
 
-    const rows = tradeBody.querySelectorAll("tr");
+    document
+        .querySelectorAll("#tradeBody tr")
+        .forEach(row => {
 
-    rows.forEach(row => {
+            row.style.display =
+                row.innerText.toLowerCase().includes(keyword)
+                    ? ""
+                    : "none";
 
-        const text = row.innerText.toLowerCase();
+        });
 
-        row.style.display =
-            text.includes(keyword) ? "" : "none";
+};
 
-    });
-
-}
-
-// ===========================
 // Clear Form
-// ===========================
-
-function clearForm() {
+window.clearForm = function () {
 
     document.querySelector(".form-box").reset();
 
-}
+    editingId = null;
 
-// ===========================
-// Final Start
-// ===========================
+};
 
+// Start
 window.addEventListener("load", () => {
 
-    renderTrades();
-
-    renderCalendar();
-
-    console.log("Trading Journal Loaded Successfully");
+    console.log("Trading Journal Ready");
 
 });
-
-const startingBalance = 0; // Change this to your starting balance
-const balance = document.getElementById("balance");
